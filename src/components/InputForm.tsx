@@ -20,16 +20,22 @@ const InputForm = ({ onGenerated }) => {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          input,
+          topic: input,
         }),
       });
 
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
       const jsonData = await response.json();
       const jsonString = JSON.stringify(jsonData, null, 2);
+      console.log("output generated", jsonString);
 
       setOutput(jsonString);
-      onGenerated(response);
+      onGenerated(jsonData); // Pass jsonData instead of response
     } catch (error) {
+      console.error("Error generating response:", error);
       alert("Error generating response. Please try again.");
     } finally {
       setLoading(false);
@@ -37,18 +43,18 @@ const InputForm = ({ onGenerated }) => {
   };
 
   return (
-    <div style={{ padding: "20px" }}>
-      <h1>System Design JSON Generator</h1>
+    <div style={{ textAlign: "center" }}>
       <textarea
-        rows={4}
+        rows={2}
         cols={50}
         value={input}
         onChange={(e) => setInput(e.target.value)}
         placeholder="Enter a system design concept, e.g., 'Twitter Newsfeed'"
+        style={{ paddingLeft: "10px", paddingTop: "10px" }}
       />
       <br />
       <button onClick={handleGenerate} disabled={loading}>
-        {loading ? "Generating..." : "Generate JSON"}
+        {loading ? "Generating..." : "Generate Diagram"}
       </button>
       {/* <h2>Output:</h2>
       <pre>{output}</pre> */}

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import React, { useState } from "react";
 import FlowChart from "./components/FlowChart";
 import InputForm from "./components/InputForm";
 
@@ -16,7 +16,9 @@ function App() {
 
   return (
     <div>
-      <h1 style={{ textAlign: "center" }}>System Architecture Diagram</h1>
+      <h1 style={{ textAlign: "center" }}>
+        System Architecture Diagram Generator
+      </h1>
       <InputForm onGenerated={handleGeneratedData} />
       {systemData && <FlowChart systemData={systemData} />}
     </div>

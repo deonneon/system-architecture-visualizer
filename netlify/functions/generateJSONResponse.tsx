@@ -1,8 +1,8 @@
 import OpenAI from "openai";
 
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+const openai = new OpenAI({ apiKey: process.env.VITE_OPENAI_API_KEY });
 
-export default async (req) => {
+export default async (req: Request) => {
   const requestData = await req.json();
   const { topic } = requestData;
 
@@ -61,5 +61,5 @@ export default async (req) => {
 
   const data = JSON.parse(resp.choices[0]?.message.content || "{}");
 
-  return Response.json(data);
+  return Response.json(resp.choices[0]?.message.content || "{}");
 };

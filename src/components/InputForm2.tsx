@@ -1,4 +1,5 @@
-import { useState } from "react";
+import React, { useState } from "react";
+import { generateJSONResponse } from "../api";
 
 const InputForm = ({ onGenerated }) => {
   const [input, setInput] = useState("");
@@ -14,21 +15,9 @@ const InputForm = ({ onGenerated }) => {
     setLoading(true);
 
     try {
-      const response = await fetch("/.netlify/functions/generateJSONResponse", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          input,
-        }),
-      });
-
-      const jsonData = await response.json();
-      const jsonString = JSON.stringify(jsonData, null, 2);
-
-      setOutput(jsonString);
-      onGenerated(response);
+      const response = await generateJSONResponse(input);
+      setOutput(response);
+      onGenerated(response); // Pass the generated data to the parent component (App)
     } catch (error) {
       alert("Error generating response. Please try again.");
     } finally {
@@ -50,8 +39,8 @@ const InputForm = ({ onGenerated }) => {
       <button onClick={handleGenerate} disabled={loading}>
         {loading ? "Generating..." : "Generate JSON"}
       </button>
-      {/* <h2>Output:</h2>
-      <pre>{output}</pre> */}
+      <h2>Output:</h2>
+      <pre>{output}</pre>
     </div>
   );
 };
