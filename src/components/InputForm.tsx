@@ -39,8 +39,8 @@ const InputForm = ({ onGenerated }) => {
       <button onClick={handleGenerate} disabled={loading}>
         {loading ? "Generating..." : "Generate JSON"}
       </button>
-      <h2>Output:</h2>
-      <pre>{output}</pre>
+      {/* <h2>Output:</h2>
+      <pre>{output}</pre> */}
     </div>
   );
 };
