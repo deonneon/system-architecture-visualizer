@@ -29,8 +29,8 @@ const InputForm = ({ onGenerated }) => {
     <div style={{ padding: "20px" }}>
       <h1>System Design JSON Generator</h1>
       <textarea
-        rows="4"
-        cols="50"
+        rows={4}
+        cols={50}
         value={input}
         onChange={(e) => setInput(e.target.value)}
         placeholder="Enter a system design concept, e.g., 'Twitter Newsfeed'"
