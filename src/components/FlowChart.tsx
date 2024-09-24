@@ -1,5 +1,4 @@
-// src/components/FlowChart.jsx
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import ReactFlow, {
   Background,
   Controls,
@@ -8,7 +7,6 @@ import ReactFlow, {
 } from "reactflow";
 import "reactflow/dist/style.css";
 import dagre from "dagre";
-import systemArchitecture from "../data/systemArchitecture.json";
 
 const nodeWidth = 172;
 const nodeHeight = 36;
@@ -47,42 +45,44 @@ const getLayoutedElements = (nodes, edges, direction = "LR") => {
   return { nodes: layoutedNodes, edges };
 };
 
-const FlowChart = () => {
+const FlowChart = ({ systemData }) => {
   const [elements, setElements] = useState({ nodes: [], edges: [] });
 
   useEffect(() => {
-    // Parse nodes
-    const parsedNodes = systemArchitecture.elements.nodes.map((node) => ({
-      id: node.id,
-      data: {
-        label: (
-          <div>
-            <strong>{node.id}</strong>
-            <br />
-            {node.description}
-          </div>
-        ),
-      },
-      type: "default",
-    }));
+    if (systemData) {
+      // Parse nodes
+      const parsedNodes = systemData.elements.nodes.map((node) => ({
+        id: node.id,
+        data: {
+          label: (
+            <div>
+              <strong>{node.id}</strong>
+              <br />
+              {node.description}
+            </div>
+          ),
+        },
+        type: "default",
+      }));
 
-    // Parse edges
-    const parsedEdges = systemArchitecture.elements.connections.map(
-      (conn, index) => ({
-        id: `e${conn.from}-${conn.to}-${index}`,
-        source: conn.from,
-        target: conn.to,
-        label: conn.type,
-        animated: false,
-        style: { stroke: "#000" },
-        labelStyle: { fill: "#000", fontWeight: 700 },
-        arrowHeadType: "arrowclosed",
-      })
-    );
+      // Parse edges
+      const parsedEdges = systemData.elements.connections.map(
+        (conn, index) => ({
+          id: `e${conn.from}-${conn.to}-${index}`,
+          source: conn.from,
+          target: conn.to,
+          label: conn.type,
+          animated: false,
+          style: { stroke: "#000" },
+          labelStyle: { fill: "#000", fontWeight: 700 },
+          arrowHeadType: "arrowclosed",
+        })
+      );
 
-    const layouted = getLayoutedElements(parsedNodes, parsedEdges);
-    setElements(layouted);
-  }, []);
+      const layouted = getLayoutedElements(parsedNodes, parsedEdges);
+      setElements(layouted);
+    }
+  }, [systemData]);
 
   return (
     <div style={{ height: "100vh", width: "100%" }}>

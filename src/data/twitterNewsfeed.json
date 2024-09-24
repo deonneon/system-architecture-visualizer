@@ -1,0 +1,145 @@
+{
+  "elements": {
+    "nodes": [
+      {
+        "id": "Client",
+        "type": "User Interface",
+        "description": "Web or mobile app used by the end-user to interact with the newsfeed"
+      },
+      {
+        "id": "LoadBalancer",
+        "type": "Load Balancer",
+        "description": "Distributes incoming traffic across multiple servers"
+      },
+      {
+        "id": "WebServer",
+        "type": "Server",
+        "description": "Handles HTTP requests and serves static content like the newsfeed interface"
+      },
+      {
+        "id": "ApplicationServer",
+        "type": "Server",
+        "description": "Processes business logic for posting tweets, likes, retweets, etc."
+      },
+      {
+        "id": "Cache",
+        "type": "Cache",
+        "description": "Stores frequently accessed data such as popular tweets to reduce database load"
+      },
+      {
+        "id": "TimelineService",
+        "type": "Service",
+        "description": "Generates and updates the user’s personalized newsfeed"
+      },
+      {
+        "id": "Database",
+        "type": "Database",
+        "description": "Stores user data, tweets, likes, retweets, and other interactions"
+      },
+      {
+        "id": "NotificationService",
+        "type": "Service",
+        "description": "Handles notifications for new tweets, likes, comments, etc."
+      },
+      {
+        "id": "AuthenticationService",
+        "type": "Service",
+        "description": "Handles user authentication and authorization"
+      },
+      {
+        "id": "API",
+        "type": "Interface",
+        "description": "Provides endpoints for client-server communication, such as posting tweets or fetching newsfeed"
+      }
+    ],
+    "connections": [
+      {
+        "from": "Client",
+        "to": "LoadBalancer",
+        "type": "HTTPS Request",
+        "description": "Client sends requests to the load balancer"
+      },
+      {
+        "from": "LoadBalancer",
+        "to": "WebServer",
+        "type": "HTTP Forward",
+        "description": "Load balancer forwards requests to a web server"
+      },
+      {
+        "from": "WebServer",
+        "to": "ApplicationServer",
+        "type": "Internal API Call",
+        "description": "Web server communicates with the application server"
+      },
+      {
+        "from": "ApplicationServer",
+        "to": "TimelineService",
+        "type": "Timeline Request",
+        "description": "Application server requests an updated timeline for the user"
+      },
+      {
+        "from": "TimelineService",
+        "to": "Cache",
+        "type": "Cache Query",
+        "description": "Timeline service checks cache for precomputed timelines"
+      },
+      {
+        "from": "Cache",
+        "to": "TimelineService",
+        "type": "Cache Response",
+        "description": "Cache returns timeline data if available"
+      },
+      {
+        "from": "TimelineService",
+        "to": "Database",
+        "type": "SQL Query",
+        "description": "If cache miss, timeline service queries the database for timeline data"
+      },
+      {
+        "from": "Database",
+        "to": "TimelineService",
+        "type": "SQL Response",
+        "description": "Database returns query results for timeline data"
+      },
+      {
+        "from": "ApplicationServer",
+        "to": "NotificationService",
+        "type": "Notification Request",
+        "description": "Application server sends a request to the notification service for updates"
+      },
+      {
+        "from": "NotificationService",
+        "to": "ApplicationServer",
+        "type": "Notification Response",
+        "description": "Notification service returns the latest notifications for the user"
+      },
+      {
+        "from": "ApplicationServer",
+        "to": "AuthenticationService",
+        "type": "Auth Request",
+        "description": "Application server communicates with the authentication service for user login"
+      },
+      {
+        "from": "AuthenticationService",
+        "to": "ApplicationServer",
+        "type": "Auth Response",
+        "description": "Authentication service returns authentication status"
+      },
+      {
+        "from": "ApplicationServer",
+        "to": "WebServer",
+        "type": "API Response",
+        "description": "Application server sends the newsfeed data back to the web server"
+      },
+      {
+        "from": "WebServer",
+        "to": "Client",
+        "type": "HTTP Response",
+        "description": "Web server responds to the client with the updated newsfeed"
+      }
+    ]
+  },
+  "metadata": {
+    "description": "System architecture for a Twitter-like newsfeed application, including timeline generation, caching, authentication, and notifications."
+  }
+}
