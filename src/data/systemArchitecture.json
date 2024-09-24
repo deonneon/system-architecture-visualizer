@@ -1,0 +1,117 @@
+{
+  "elements": {
+    "nodes": [
+      {
+        "id": "Client",
+        "type": "User Interface",
+        "description": "Web browser or mobile app used by the end-user"
+      },
+      {
+        "id": "LoadBalancer",
+        "type": "Load Balancer",
+        "description": "Distributes incoming traffic across multiple web servers"
+      },
+      {
+        "id": "WebServer",
+        "type": "Server",
+        "description": "Handles HTTP requests and serves static content"
+      },
+      {
+        "id": "ApplicationServer",
+        "type": "Server",
+        "description": "Executes business logic and processes dynamic requests"
+      },
+      {
+        "id": "Cache",
+        "type": "Cache",
+        "description": "Stores frequently accessed data to reduce database load"
+      },
+      {
+        "id": "Database",
+        "type": "Database",
+        "description": "Stores and manages application data"
+      },
+      {
+        "id": "AuthenticationService",
+        "type": "Service",
+        "description": "Handles user authentication and authorization"
+      },
+      {
+        "id": "API",
+        "type": "Interface",
+        "description": "Provides endpoints for client-server communication"
+      }
+    ],
+    "connections": [
+      {
+        "from": "Client",
+        "to": "LoadBalancer",
+        "type": "HTTPS Request",
+        "description": "Client sends requests to the load balancer"
+      },
+      {
+        "from": "LoadBalancer",
+        "to": "WebServer",
+        "type": "HTTP Forward",
+        "description": "Load balancer forwards requests to a web server"
+      },
+      {
+        "from": "WebServer",
+        "to": "ApplicationServer",
+        "type": "Internal API Call",
+        "description": "Web server communicates with the application server"
+      },
+      {
+        "from": "ApplicationServer",
+        "to": "Cache",
+        "type": "Cache Query",
+        "description": "Application server checks cache for data"
+      },
+      {
+        "from": "Cache",
+        "to": "ApplicationServer",
+        "type": "Cache Response",
+        "description": "Cache returns data if available"
+      },
+      {
+        "from": "ApplicationServer",
+        "to": "Database",
+        "type": "SQL Query",
+        "description": "If cache miss, application server queries the database"
+      },
+      {
+        "from": "Database",
+        "to": "ApplicationServer",
+        "type": "SQL Response",
+        "description": "Database returns query results"
+      },
+      {
+        "from": "ApplicationServer",
+        "to": "AuthenticationService",
+        "type": "Auth Request",
+        "description": "Application server communicates with authentication service"
+      },
+      {
+        "from": "AuthenticationService",
+        "to": "ApplicationServer",
+        "type": "Auth Response",
+        "description": "Authentication service returns authentication status"
+      },
+      {
+        "from": "ApplicationServer",
+        "to": "WebServer",
+        "type": "API Response",
+        "description": "Application server sends processed data back to web server"
+      },
+      {
+        "from": "WebServer",
+        "to": "Client",
+        "type": "HTTP Response",
+        "description": "Web server responds to the client with the final data"
+      }
+    ]
+  },
+  "metadata": {
+    "description": "System architecture for a web application interacting with a database, including load balancing, caching, authentication, and client-server communication."
+  }
+}
