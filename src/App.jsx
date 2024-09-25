@@ -78,9 +78,8 @@ const App = () => {
         System Architecture Diagram Generator
       </h1>
       <InputForm onGenerated={handleGenerated} />
-      {systemData && (
-        <FlowChart systemData={systemData} onExpand={handleExpand} />
-      )}
+
+      <FlowChart systemData={systemData} onExpand={handleExpand} />
     </div>
   );
 };

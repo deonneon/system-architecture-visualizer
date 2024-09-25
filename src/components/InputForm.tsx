@@ -43,7 +43,13 @@ const InputForm = ({ onGenerated }) => {
   };
 
   return (
-    <div style={{ textAlign: "center" }}>
+    <div
+      style={{
+        textAlign: "center",
+        justifyContent: "center",
+        display: "flex",
+      }}
+    >
       <textarea
         rows={2}
         cols={50}
@@ -52,9 +58,12 @@ const InputForm = ({ onGenerated }) => {
         placeholder="Enter a system design concept, e.g., 'Twitter Newsfeed'"
         style={{ paddingLeft: "10px", paddingTop: "10px" }}
       />
-      <br />
-      <button onClick={handleGenerate} disabled={loading}>
-        {loading ? "Generating..." : "Generate Diagram"}
+      <button
+        onClick={handleGenerate}
+        disabled={loading}
+        style={{ height: "50px" }}
+      >
+        {loading ? "Generating..." : "Generate"}
       </button>
       {/* <h2>Output:</h2>
       <pre>{output}</pre> */}

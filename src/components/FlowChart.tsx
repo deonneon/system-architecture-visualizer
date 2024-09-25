@@ -8,6 +8,9 @@ import ReactFlow, {
 import "reactflow/dist/style.css";
 import dagre from "dagre";
 
+import TwitterNewsfeed from "../data/twitterNewsfeed.json";
+import WebBasic from "../data/webBasic.json";
+
 const nodeWidth = 172;
 const nodeHeight = 36;
 
@@ -20,8 +23,6 @@ const getLayoutedElements = (nodes, edges, direction = "LR") => {
     rankdir: direction,
     nodesep: 80,
     ranksep: 100,
-    // align: "DR", // Align nodes towards Down-Right
-    ranker: "network-simplex", // Use network simplex algorithm for ranking
   });
 
   nodes.forEach((node) => {
@@ -29,7 +30,7 @@ const getLayoutedElements = (nodes, edges, direction = "LR") => {
   });
 
   edges.forEach((edge) => {
-    dagreGraph.setEdge(edge.source, edge.target, { weight: 1 }); // You can adjust weight as needed
+    dagreGraph.setEdge(edge.source, edge.target, { weight: 1 });
   });
 
   dagre.layout(dagreGraph);
@@ -39,7 +40,6 @@ const getLayoutedElements = (nodes, edges, direction = "LR") => {
     node.targetPosition = isHorizontal ? "left" : "top";
     node.sourcePosition = isHorizontal ? "right" : "bottom";
 
-    // Shift node position to center
     node.position = {
       x: nodeWithPosition.x - nodeWidth / 2,
       y: nodeWithPosition.y - nodeHeight / 2,
@@ -51,7 +51,7 @@ const getLayoutedElements = (nodes, edges, direction = "LR") => {
   return { nodes: layoutedNodes, edges };
 };
 
-const FlowChart = ({ systemData, onExpand }) => {
+const FlowChart = ({ onExpand }) => {
   const [elements, setElements] = useState({ nodes: [], edges: [] });
   const [selectedNodes, setSelectedNodes] = useState([]);
 
@@ -59,41 +59,39 @@ const FlowChart = ({ systemData, onExpand }) => {
     setSelectedNodes(nodes);
   }, []);
 
+  const handleExampleSwitch = (exampleData) => {
+    const parsedNodes = exampleData.elements.nodes.map((node) => ({
+      id: node.id,
+      data: {
+        label: (
+          <div>
+            <strong>{node.id}</strong>
+            <br />
+            {node.description}
+          </div>
+        ),
+      },
+      type: "default",
+    }));
+
+    const parsedEdges = exampleData.elements.connections.map((conn, index) => ({
+      id: `e${conn.from}-${conn.to}-${index}`,
+      source: conn.from,
+      target: conn.to,
+      label: conn.type,
+      animated: false,
+      style: { stroke: "#000" },
+      labelStyle: { fill: "#000", fontWeight: 700 },
+      arrowHeadType: "arrowclosed",
+    }));
+
+    const layouted = getLayoutedElements(parsedNodes, parsedEdges);
+    setElements(layouted);
+  };
+
   useEffect(() => {
-    if (systemData) {
-      // Parse nodes
-      const parsedNodes = systemData.elements.nodes.map((node) => ({
-        id: node.id,
-        data: {
-          label: (
-            <div>
-              <strong>{node.id}</strong>
-              <br />
-              {node.description}
-            </div>
-          ),
-        },
-        type: "default",
-      }));
-
-      // Parse edges
-      const parsedEdges = systemData.elements.connections.map(
-        (conn, index) => ({
-          id: `e${conn.from}-${conn.to}-${index}`,
-          source: conn.from,
-          target: conn.to,
-          label: conn.type,
-          animated: false,
-          style: { stroke: "#000" },
-          labelStyle: { fill: "#000", fontWeight: 700 },
-          arrowHeadType: "arrowclosed",
-        })
-      );
-
-      const layouted = getLayoutedElements(parsedNodes, parsedEdges);
-      setElements(layouted);
-    }
-  }, [systemData]);
+    handleExampleSwitch(TwitterNewsfeed); // Load the first example by default
+  }, []);
 
   const handleExpand = () => {
     if (selectedNodes.length > 0) {
@@ -104,26 +102,34 @@ const FlowChart = ({ systemData, onExpand }) => {
 
   return (
     <div style={{ height: "100vh", width: "100%" }}>
+      <div style={{ position: "absolute", zIndex: 10, top: 10, left: 10 }}>
+        <button onClick={() => handleExampleSwitch(TwitterNewsfeed)}>
+          Twitter Newsfeed
+        </button>
+        <button onClick={() => handleExampleSwitch(WebBasic)}>Web Basic</button>
+      </div>
+
       {selectedNodes.length > 0 && (
         <button
           style={{
             position: "absolute",
             zIndex: 10,
             top: 10,
-            left: 10,
+            left: 150,
           }}
           onClick={handleExpand}
         >
           Expand
         </button>
       )}
+
       <ReactFlowProvider>
         <ReactFlow
           nodes={elements.nodes}
           edges={elements.edges}
           fitView
           fitViewOptions={{ padding: 0.2 }}
-          nodesDraggable={true}
+          nodesDraggable={false}
           nodesConnectable={false}
           elementsSelectable={true}
           onSelectionChange={onSelectionChange}
