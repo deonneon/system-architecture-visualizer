@@ -16,14 +16,20 @@ const getLayoutedElements = (nodes, edges, direction = "LR") => {
   dagreGraph.setDefaultEdgeLabel(() => ({}));
 
   const isHorizontal = direction === "LR";
-  dagreGraph.setGraph({ rankdir: direction });
+  dagreGraph.setGraph({
+    rankdir: direction,
+    nodesep: 80,
+    ranksep: 100,
+    // align: "DR", // Align nodes towards Down-Right
+    ranker: "network-simplex", // Use network simplex algorithm for ranking
+  });
 
   nodes.forEach((node) => {
     dagreGraph.setNode(node.id, { width: nodeWidth, height: nodeHeight });
   });
 
   edges.forEach((edge) => {
-    dagreGraph.setEdge(edge.source, edge.target);
+    dagreGraph.setEdge(edge.source, edge.target, { weight: 1 }); // You can adjust weight as needed
   });
 
   dagre.layout(dagreGraph);
@@ -117,7 +123,7 @@ const FlowChart = ({ systemData, onExpand }) => {
           edges={elements.edges}
           fitView
           fitViewOptions={{ padding: 0.2 }}
-          nodesDraggable={false}
+          nodesDraggable={true}
           nodesConnectable={false}
           elementsSelectable={true}
           onSelectionChange={onSelectionChange}

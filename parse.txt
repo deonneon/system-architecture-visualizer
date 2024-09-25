@@ -5,64 +5,121 @@ const openai = new OpenAI({ apiKey: process.env.VITE_OPENAI_API_KEY });
 
 export default async (req: Request) => {
   const requestData = await req.json();
-  const { topic } = requestData;
+  const { topic, nodes } = requestData;
 
-  const example = `
+  let prompt;
+
+  if (topic) {
+    const example = `
     {
-  "elements": {
-    "nodes": [
-      {
-        "id": "Client",
-        "type": "User Interface",
-        "description": "Web browser or mobile app used by the end-user"
+      "elements": {
+        "nodes": [
+          {
+            "id": "Client",
+            "type": "User Interface",
+            "description": "Web browser or mobile app used by the end-user"
+          },
+          {
+            "id": "LoadBalancer",
+            "type": "Load Balancer",
+            "description": "Distributes incoming traffic across multiple web servers"
+          },
+        ],
+        "connections": [
+          {
+            "from": "Client",
+            "to": "LoadBalancer",
+            "type": "HTTPS Request",
+            "description": "Client sends requests to the load balancer"
+          },
+          {
+            "from": "LoadBalancer",
+            "to": "WebServer",
+            "type": "HTTP Forward",
+            "description": "Load balancer forwards requests to a web server"
+          },
+        ]
       },
+      "metadata": {
+        "description": "System architecture for a web application interacting with a database, including load balancing, caching, authentication, and client-server communication."
+      }
+    }
+    `;
+    prompt = `Generate a JSON template for the system design concept: ${topic}. Example: ${example}`;
+  } else if (nodes) {
+    // If nodes are provided, we need to generate expanded data for those nodes
+    const nodesList = nodes.join(", ");
+    const example = `
+    {
+      "elements": {
+        "nodes": [
+          {
+            "id": "CacheServer",
+            "type": "Cache",
+            "description": "Stores frequently accessed data for quick retrieval"
+          },
+          {
+            "id": "AuthenticationService",
+            "type": "Service",
+            "description": "Handles user authentication and authorization"
+          },
+        ],
+        "connections": [
+          {
+            "from": "WebServer",
+            "to": "CacheServer",
+            "type": "Cache Lookup",
+            "description": "Web server checks cache for data"
+          },
+          {
+            "from": "Client",
+            "to": "AuthenticationService",
+            "type": "Login Request",
+            "description": "Client sends login request to authentication service"
+          },
+        ]
+      }
+    }
+    `;
+    prompt = `Expand the following nodes in a system design diagram and provide additional details in JSON format. Nodes: ${nodesList}. Use the same JSON format as before. Example: ${example}`;
+  } else {
+    return new Response(
+      JSON.stringify({ error: "No topic or nodes provided" }),
       {
-        "id": "LoadBalancer",
-        "type": "Load Balancer",
-        "description": "Distributes incoming traffic across multiple web servers"
-      },
-    ],
-    "connections": [
-      {
-        "from": "Client",
-        "to": "LoadBalancer",
-        "type": "HTTPS Request",
-        "description": "Client sends requests to the load balancer"
-      },
-      {
-        "from": "LoadBalancer",
-        "to": "WebServer",
-        "type": "HTTP Forward",
-        "description": "Load balancer forwards requests to a web server"
-      },
-    ]
-  },
-  "metadata": {
-    "description": "System architecture for a web application interacting with a database, including load balancing, caching, authentication, and client-server communication."
+        status: 400,
+      }
+    );
   }
-}
-`;
-  const prompt = `Generate a JSON template for the system design concept: ${topic}. Example: ${example}`;
 
-  const resp = await openai.chat.completions.create({
-    response_format: { type: "json_object" },
-    model: "gpt-4o",
-    messages: [
-      {
-        role: "system",
-        content:
-          "You are a helpful education assistant designed to output structured JSON.",
-      },
-      {
-        role: "user",
-        content: prompt,
-      },
-    ],
-  });
+  try {
+    const resp = await openai.chat.completions.create({
+      response_format: { type: "json_object" },
+      model: "gpt-4o-mini",
+      messages: [
+        {
+          role: "system",
+          content:
+            "You are a helpful assistant that generates system design diagrams in JSON format.",
+        },
+        {
+          role: "user",
+          content: prompt,
+        },
+      ],
+    });
 
-  const data = JSON.parse(resp.choices[0]?.message.content || "{}");
+    const data = JSON.parse(resp.choices[0]?.message.content || "{}");
 
-  return Response.json(resp.choices[0]?.message.content || "{}");
+    return new Response(JSON.stringify(data), {
+      headers: { "Content-Type": "application/json" },
+    });
+  } catch (error) {
+    console.error("Error calling OpenAI API:", error);
+    return new Response(
+      JSON.stringify({ error: "Error calling OpenAI API", details: error }),
+      { status: 500 }
+    );
+  }
 };
 
 
@@ -252,7 +309,7 @@ export default InputForm;
 
 
 File: ./src/components/FlowChart.tsx
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import ReactFlow, {
   Background,
   Controls,
@@ -270,14 +327,20 @@ const getLayoutedElements = (nodes, edges, direction = "LR") => {
   dagreGraph.setDefaultEdgeLabel(() => ({}));
 
   const isHorizontal = direction === "LR";
-  dagreGraph.setGraph({ rankdir: direction });
+  dagreGraph.setGraph({
+    rankdir: direction,
+    nodesep: 80,
+    ranksep: 100,
+    // align: "DR", // Align nodes towards Down-Right
+    ranker: "network-simplex", // Use network simplex algorithm for ranking
+  });
 
   nodes.forEach((node) => {
     dagreGraph.setNode(node.id, { width: nodeWidth, height: nodeHeight });
   });
 
   edges.forEach((edge) => {
-    dagreGraph.setEdge(edge.source, edge.target);
+    dagreGraph.setEdge(edge.source, edge.target, { weight: 1 }); // You can adjust weight as needed
   });
 
   dagre.layout(dagreGraph);
@@ -299,8 +362,13 @@ const getLayoutedElements = (nodes, edges, direction = "LR") => {
   return { nodes: layoutedNodes, edges };
 };
 
-const FlowChart = ({ systemData }) => {
+const FlowChart = ({ systemData, onExpand }) => {
   const [elements, setElements] = useState({ nodes: [], edges: [] });
+  const [selectedNodes, setSelectedNodes] = useState([]);
+
+  const onSelectionChange = useCallback(({ nodes }) => {
+    setSelectedNodes(nodes);
+  }, []);
 
   useEffect(() => {
     if (systemData) {
@@ -338,8 +406,28 @@ const FlowChart = ({ systemData }) => {
     }
   }, [systemData]);
 
+  const handleExpand = () => {
+    if (selectedNodes.length > 0) {
+      onExpand(selectedNodes);
+      setSelectedNodes([]);
+    }
+  };
+
   return (
     <div style={{ height: "100vh", width: "100%" }}>
+      {selectedNodes.length > 0 && (
+        <button
+          style={{
+            position: "absolute",
+            zIndex: 10,
+            top: 10,
+            left: 10,
+          }}
+          onClick={handleExpand}
+        >
+          Expand
+        </button>
+      )}
       <ReactFlowProvider>
         <ReactFlow
           nodes={elements.nodes}
@@ -348,7 +436,9 @@ const FlowChart = ({ systemData }) => {
           fitViewOptions={{ padding: 0.2 }}
           nodesDraggable={false}
           nodesConnectable={false}
-          elementsSelectable={false}
+          elementsSelectable={true}
+          onSelectionChange={onSelectionChange}
+          selectNodesOnDrag={true}
         >
           <Background />
           <Controls />
