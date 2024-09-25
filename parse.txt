@@ -1,0 +1,364 @@
+File: ./netlify/functions/generateJSONResponse.tsx
+import OpenAI from "openai";
+
+const openai = new OpenAI({ apiKey: process.env.VITE_OPENAI_API_KEY });
+
+export default async (req: Request) => {
+  const requestData = await req.json();
+  const { topic } = requestData;
+
+  const example = `
+    {
+  "elements": {
+    "nodes": [
+      {
+        "id": "Client",
+        "type": "User Interface",
+        "description": "Web browser or mobile app used by the end-user"
+      },
+      {
+        "id": "LoadBalancer",
+        "type": "Load Balancer",
+        "description": "Distributes incoming traffic across multiple web servers"
+      },
+    ],
+    "connections": [
+      {
+        "from": "Client",
+        "to": "LoadBalancer",
+        "type": "HTTPS Request",
+        "description": "Client sends requests to the load balancer"
+      },
+      {
+        "from": "LoadBalancer",
+        "to": "WebServer",
+        "type": "HTTP Forward",
+        "description": "Load balancer forwards requests to a web server"
+      },
+    ]
+  },
+  "metadata": {
+    "description": "System architecture for a web application interacting with a database, including load balancing, caching, authentication, and client-server communication."
+  }
+}
+`;
+  const prompt = `Generate a JSON template for the system design concept: ${topic}. Example: ${example}`;
+
+  const resp = await openai.chat.completions.create({
+    response_format: { type: "json_object" },
+    model: "gpt-4o",
+    messages: [
+      {
+        role: "system",
+        content:
+          "You are a helpful education assistant designed to output structured JSON.",
+      },
+      {
+        role: "user",
+        content: prompt,
+      },
+    ],
+  });
+
+  const data = JSON.parse(resp.choices[0]?.message.content || "{}");
+
+  return Response.json(resp.choices[0]?.message.content || "{}");
+};
+
+
+File: ./eslint.config.js
+import js from '@eslint/js'
+import globals from 'globals'
+import react from 'eslint-plugin-react'
+import reactHooks from 'eslint-plugin-react-hooks'
+import reactRefresh from 'eslint-plugin-react-refresh'
+
+export default [
+  { ignores: ['dist'] },
+  {
+    files: ['**/*.{js,jsx}'],
+    languageOptions: {
+      ecmaVersion: 2020,
+      globals: globals.browser,
+      parserOptions: {
+        ecmaVersion: 'latest',
+        ecmaFeatures: { jsx: true },
+        sourceType: 'module',
+      },
+    },
+    settings: { react: { version: '18.3' } },
+    plugins: {
+      react,
+      'react-hooks': reactHooks,
+      'react-refresh': reactRefresh,
+    },
+    rules: {
+      ...js.configs.recommended.rules,
+      ...react.configs.recommended.rules,
+      ...react.configs['jsx-runtime'].rules,
+      ...reactHooks.configs.recommended.rules,
+      'react/jsx-no-target-blank': 'off',
+      'react-refresh/only-export-components': [
+        'warn',
+        { allowConstantExport: true },
+      ],
+    },
+  },
+]
+
+
+File: ./src/App.css
+#root {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 2rem;
+  text-align: center;
+}
+
+.logo {
+  height: 6em;
+  padding: 1.5em;
+  will-change: filter;
+  transition: filter 300ms;
+}
+.logo:hover {
+  filter: drop-shadow(0 0 2em #646cffaa);
+}
+.logo.react:hover {
+  filter: drop-shadow(0 0 2em #61dafbaa);
+}
+
+@keyframes logo-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  a:nth-of-type(2) .logo {
+    animation: logo-spin infinite 20s linear;
+  }
+}
+
+.card {
+  padding: 2em;
+}
+
+.read-the-docs {
+  color: #888;
+}
+
+
+File: ./src/index.css
+/* src/index.css */
+
+body {
+  margin: 0;
+  padding: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Oxygen",
+    "Ubuntu", "Cantarell", "Fira Sans", "Droid Sans", "Helvetica Neue",
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+code {
+  font-family: source-code-pro, Menlo, Monaco, Consolas, "Courier New",
+    monospace;
+}
+
+h1 {
+  margin: 20px 0;
+}
+
+.react-flow__node-default {
+  padding: 10px;
+  border: 1px solid #777;
+  border-radius: 5px;
+  background: #fff;
+  box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+
+File: ./src/components/InputForm.tsx
+import React, { useState } from "react";
+
+const InputForm = ({ onGenerated }) => {
+  const [input, setInput] = useState("");
+  const [output, setOutput] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  const handleGenerate = async () => {
+    if (input.trim() === "") {
+      alert("Please enter a system design concept");
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      const response = await fetch("/.netlify/functions/generateJSONResponse", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          topic: input,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const jsonData = await response.json();
+      const jsonString = JSON.stringify(jsonData, null, 2);
+      console.log("output generated", jsonString);
+
+      setOutput(jsonString);
+      onGenerated(jsonData); // Pass jsonData instead of response
+    } catch (error) {
+      console.error("Error generating response:", error);
+      alert("Error generating response. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div style={{ textAlign: "center" }}>
+      <textarea
+        rows={2}
+        cols={50}
+        value={input}
+        onChange={(e) => setInput(e.target.value)}
+        placeholder="Enter a system design concept, e.g., 'Twitter Newsfeed'"
+        style={{ paddingLeft: "10px", paddingTop: "10px" }}
+      />
+      <br />
+      <button onClick={handleGenerate} disabled={loading}>
+        {loading ? "Generating..." : "Generate Diagram"}
+      </button>
+      {/* <h2>Output:</h2>
+      <pre>{output}</pre> */}
+    </div>
+  );
+};
+
+export default InputForm;
+
+
+File: ./src/components/FlowChart.tsx
+import React, { useEffect, useState } from "react";
+import ReactFlow, {
+  Background,
+  Controls,
+  MiniMap,
+  ReactFlowProvider,
+} from "reactflow";
+import "reactflow/dist/style.css";
+import dagre from "dagre";
+
+const nodeWidth = 172;
+const nodeHeight = 36;
+
+const getLayoutedElements = (nodes, edges, direction = "LR") => {
+  const dagreGraph = new dagre.graphlib.Graph();
+  dagreGraph.setDefaultEdgeLabel(() => ({}));
+
+  const isHorizontal = direction === "LR";
+  dagreGraph.setGraph({ rankdir: direction });
+
+  nodes.forEach((node) => {
+    dagreGraph.setNode(node.id, { width: nodeWidth, height: nodeHeight });
+  });
+
+  edges.forEach((edge) => {
+    dagreGraph.setEdge(edge.source, edge.target);
+  });
+
+  dagre.layout(dagreGraph);
+
+  const layoutedNodes = nodes.map((node) => {
+    const nodeWithPosition = dagreGraph.node(node.id);
+    node.targetPosition = isHorizontal ? "left" : "top";
+    node.sourcePosition = isHorizontal ? "right" : "bottom";
+
+    // Shift node position to center
+    node.position = {
+      x: nodeWithPosition.x - nodeWidth / 2,
+      y: nodeWithPosition.y - nodeHeight / 2,
+    };
+
+    return node;
+  });
+
+  return { nodes: layoutedNodes, edges };
+};
+
+const FlowChart = ({ systemData }) => {
+  const [elements, setElements] = useState({ nodes: [], edges: [] });
+
+  useEffect(() => {
+    if (systemData) {
+      // Parse nodes
+      const parsedNodes = systemData.elements.nodes.map((node) => ({
+        id: node.id,
+        data: {
+          label: (
+            <div>
+              <strong>{node.id}</strong>
+              <br />
+              {node.description}
+            </div>
+          ),
+        },
+        type: "default",
+      }));
+
+      // Parse edges
+      const parsedEdges = systemData.elements.connections.map(
+        (conn, index) => ({
+          id: `e${conn.from}-${conn.to}-${index}`,
+          source: conn.from,
+          target: conn.to,
+          label: conn.type,
+          animated: false,
+          style: { stroke: "#000" },
+          labelStyle: { fill: "#000", fontWeight: 700 },
+          arrowHeadType: "arrowclosed",
+        })
+      );
+
+      const layouted = getLayoutedElements(parsedNodes, parsedEdges);
+      setElements(layouted);
+    }
+  }, [systemData]);
+
+  return (
+    <div style={{ height: "100vh", width: "100%" }}>
+      <ReactFlowProvider>
+        <ReactFlow
+          nodes={elements.nodes}
+          edges={elements.edges}
+          fitView
+          fitViewOptions={{ padding: 0.2 }}
+          nodesDraggable={false}
+          nodesConnectable={false}
+          elementsSelectable={false}
+        >
+          <Background />
+          <Controls />
+          <MiniMap />
+        </ReactFlow>
+      </ReactFlowProvider>
+    </div>
+  );
+};
+
+export default FlowChart;
+
+

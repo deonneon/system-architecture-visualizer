@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import FlowChart from "./components/FlowChart";
 import InputForm from "./components/InputForm";
 
