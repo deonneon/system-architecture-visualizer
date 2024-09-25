@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import ReactFlow, {
   Background,
   Controls,
@@ -45,8 +45,13 @@ const getLayoutedElements = (nodes, edges, direction = "LR") => {
   return { nodes: layoutedNodes, edges };
 };
 
-const FlowChart = ({ systemData }) => {
+const FlowChart = ({ systemData, onExpand }) => {
   const [elements, setElements] = useState({ nodes: [], edges: [] });
+  const [selectedNodes, setSelectedNodes] = useState([]);
+
+  const onSelectionChange = useCallback(({ nodes }) => {
+    setSelectedNodes(nodes);
+  }, []);
 
   useEffect(() => {
     if (systemData) {
@@ -84,8 +89,28 @@ const FlowChart = ({ systemData }) => {
     }
   }, [systemData]);
 
+  const handleExpand = () => {
+    if (selectedNodes.length > 0) {
+      onExpand(selectedNodes);
+      setSelectedNodes([]);
+    }
+  };
+
   return (
     <div style={{ height: "100vh", width: "100%" }}>
+      {selectedNodes.length > 0 && (
+        <button
+          style={{
+            position: "absolute",
+            zIndex: 10,
+            top: 10,
+            left: 10,
+          }}
+          onClick={handleExpand}
+        >
+          Expand
+        </button>
+      )}
       <ReactFlowProvider>
         <ReactFlow
           nodes={elements.nodes}
@@ -94,7 +119,9 @@ const FlowChart = ({ systemData }) => {
           fitViewOptions={{ padding: 0.2 }}
           nodesDraggable={false}
           nodesConnectable={false}
-          elementsSelectable={false}
+          elementsSelectable={true}
+          onSelectionChange={onSelectionChange}
+          selectNodesOnDrag={true}
         >
           <Background />
           <Controls />
