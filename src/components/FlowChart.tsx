@@ -126,7 +126,7 @@ const FlowChart = ({ systemData, onExpand }) => {
             position: "absolute",
             zIndex: 10,
             top: 10,
-            left: 150,
+            right: 20,
           }}
           onClick={handleExpand}
         >

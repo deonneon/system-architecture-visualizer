@@ -44,8 +44,7 @@ export default async (req: Request) => {
       }
     }
     `;
-    prompt = `Generate a JSON template for the system d
-    esign concept: ${topic}. Example: ${example}`;
+    prompt = `Generate a JSON template for the system design concept: ${topic}. Example: ${example}. Depending on the concept, it does not have to be technical in nature and be abstract.`;
   } else if (nodes) {
     // If nodes are provided, we need to generate expanded data for those nodes
     const nodesList = nodes.join(", ");
