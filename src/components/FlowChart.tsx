@@ -51,7 +51,7 @@ const getLayoutedElements = (nodes, edges, direction = "LR") => {
   return { nodes: layoutedNodes, edges };
 };
 
-const FlowChart = ({ onExpand }) => {
+const FlowChart = ({ systemData, onExpand }) => {
   const [elements, setElements] = useState({ nodes: [], edges: [] });
   const [selectedNodes, setSelectedNodes] = useState([]);
 
@@ -60,7 +60,14 @@ const FlowChart = ({ onExpand }) => {
   }, []);
 
   const handleExampleSwitch = (exampleData) => {
-    const parsedNodes = exampleData.elements.nodes.map((node) => ({
+    const parsedElements = parseSystemData(exampleData);
+    setElements(parsedElements);
+  };
+
+  const parseSystemData = (data) => {
+    if (!data || !data.elements) return { nodes: [], edges: [] };
+
+    const parsedNodes = data.elements.nodes.map((node) => ({
       id: node.id,
       data: {
         label: (
@@ -74,7 +81,7 @@ const FlowChart = ({ onExpand }) => {
       type: "default",
     }));
 
-    const parsedEdges = exampleData.elements.connections.map((conn, index) => ({
+    const parsedEdges = data.elements.connections.map((conn, index) => ({
       id: `e${conn.from}-${conn.to}-${index}`,
       source: conn.from,
       target: conn.to,
@@ -85,13 +92,17 @@ const FlowChart = ({ onExpand }) => {
       arrowHeadType: "arrowclosed",
     }));
 
-    const layouted = getLayoutedElements(parsedNodes, parsedEdges);
-    setElements(layouted);
+    return getLayoutedElements(parsedNodes, parsedEdges);
   };
 
   useEffect(() => {
-    handleExampleSwitch(TwitterNewsfeed); // Load the first example by default
-  }, []);
+    if (systemData) {
+      const parsedElements = parseSystemData(systemData);
+      setElements(parsedElements);
+    } else {
+      handleExampleSwitch(TwitterNewsfeed); // Load the first example by default
+    }
+  }, [systemData]);
 
   const handleExpand = () => {
     if (selectedNodes.length > 0) {
