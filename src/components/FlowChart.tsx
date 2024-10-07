@@ -3,6 +3,8 @@ import ReactFlow, {
   Background,
   Controls,
   MiniMap,
+  useNodesState,
+  useEdgesState,
   ReactFlowProvider,
 } from "reactflow";
 import "reactflow/dist/style.css";
@@ -13,6 +15,16 @@ import WebBasic from "../data/webBasic.json";
 
 const nodeWidth = 172;
 const nodeHeight = 36;
+
+import CustomNode from "./node/CustomNode";
+import CustomEdge from "./edge/CustomEdge";
+
+const nodeTypes = {
+  custom: CustomNode,
+};
+const edgeTypes = {
+  custom: CustomEdge,
+};
 
 const getLayoutedElements = (nodes, edges, direction = "LR") => {
   const dagreGraph = new dagre.graphlib.Graph();
@@ -51,9 +63,41 @@ const getLayoutedElements = (nodes, edges, direction = "LR") => {
   return { nodes: layoutedNodes, edges };
 };
 
+const parseSystemData = (data) => {
+  if (!data || !data.elements) return { nodes: [], edges: [] };
+
+  const parsedNodes = data.elements.nodes.map((node) => ({
+    id: node.id,
+    data: {
+      label: (
+        <div>
+          <strong>{node.id}</strong>
+          <br />
+          {node.description}
+        </div>
+      ),
+    },
+    type: "default",
+  }));
+
+  const parsedEdges = data.elements.connections.map((conn, index) => ({
+    id: `e${conn.from}-${conn.to}-${index}`,
+    source: conn.from,
+    target: conn.to,
+    label: conn.type,
+    // type: "custom", // Use the custom edge type
+    animated: true,
+    style: { stroke: "#000" },
+    labelStyle: { fill: "#000", fontWeight: 700 },
+  }));
+
+  return getLayoutedElements(parsedNodes, parsedEdges);
+};
+
 const FlowChart = ({ systemData, onExpand }) => {
-  const [elements, setElements] = useState({ nodes: [], edges: [] });
   const [selectedNodes, setSelectedNodes] = useState([]);
+  const [nodes, setNodes, onNodesChange] = useNodesState([]);
+  const [edges, setEdges, onEdgesChange] = useEdgesState([]);
 
   const onSelectionChange = useCallback(({ nodes }) => {
     setSelectedNodes(nodes);
@@ -61,48 +105,27 @@ const FlowChart = ({ systemData, onExpand }) => {
 
   const handleExampleSwitch = (exampleData) => {
     const parsedElements = parseSystemData(exampleData);
-    setElements(parsedElements);
-  };
-
-  const parseSystemData = (data) => {
-    if (!data || !data.elements) return { nodes: [], edges: [] };
-
-    const parsedNodes = data.elements.nodes.map((node) => ({
-      id: node.id,
-      data: {
-        label: (
-          <div>
-            <strong>{node.id}</strong>
-            <br />
-            {node.description}
-          </div>
-        ),
-      },
-      type: "default",
-    }));
-
-    const parsedEdges = data.elements.connections.map((conn, index) => ({
-      id: `e${conn.from}-${conn.to}-${index}`,
-      source: conn.from,
-      target: conn.to,
-      label: conn.type,
-      animated: false,
-      style: { stroke: "#000" },
-      labelStyle: { fill: "#000", fontWeight: 700 },
-      arrowHeadType: "arrowclosed",
-    }));
-
-    return getLayoutedElements(parsedNodes, parsedEdges);
+    setNodes(parsedElements.nodes);
+    setEdges(parsedElements.edges);
   };
 
   useEffect(() => {
     if (systemData) {
-      const parsedElements = parseSystemData(systemData);
-      setElements(parsedElements);
+      const { nodes: parsedNodes, edges: parsedEdges } =
+        parseSystemData(systemData);
+      setNodes(parsedNodes);
+      setEdges(parsedEdges);
     } else {
       handleExampleSwitch(TwitterNewsfeed); // Load the first example by default
     }
-  }, [systemData]);
+  }, [systemData, setNodes, setEdges]);
+
+  const onNodeClick = useCallback(
+    (event, node) => {
+      onExpand([node]);
+    },
+    [onExpand]
+  );
 
   const handleExpand = () => {
     if (selectedNodes.length > 0) {
@@ -136,8 +159,10 @@ const FlowChart = ({ systemData, onExpand }) => {
 
       <ReactFlowProvider>
         <ReactFlow
-          nodes={elements.nodes}
-          edges={elements.edges}
+          nodes={nodes}
+          edges={edges}
+          onNodesChange={onNodesChange}
+          onEdgesChange={onEdgesChange}
           fitView
           fitViewOptions={{ padding: 0.2 }}
           nodesDraggable={false}
@@ -145,6 +170,8 @@ const FlowChart = ({ systemData, onExpand }) => {
           elementsSelectable={true}
           onSelectionChange={onSelectionChange}
           selectNodesOnDrag={true}
+          nodeTypes={nodeTypes}
+          edgeTypes={edgeTypes}
         >
           <Background />
           <Controls />

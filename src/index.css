@@ -19,10 +19,44 @@ h1 {
   margin: 20px 0;
 }
 
-.react-flow__node-default {
+/* .react-flow__node-default {
   padding: 10px;
   border: 1px solid #777;
   border-radius: 5px;
   background: #fff;
   box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.1);
+} */
+
+.react-flow__node {
+  font-family: "Comic Sans MS", cursive;
+  border: 2px solid #000;
+  border-radius: 5px;
+  padding: 10px;
+  background-color: #fff;
+  box-shadow: 3px 3px 0 rgba(0, 0, 0, 0.1);
+}
+
+.react-flow__edge path {
+  stroke-width: 1;
+  stroke: #000;
+  stroke-dasharray: 5, 5;
+}
+
+.custom-node {
+  font-family: "Comic Sans MS", cursive;
+  width: 172px;
+  height: 36px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  position: relative;
+}
+
+.node-content {
+  padding: 5px;
+  text-align: center;
+}
+
+.node-header {
+  font-weight: bold;
 }
